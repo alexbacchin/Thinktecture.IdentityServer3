@@ -3,15 +3,15 @@ properties {
 	$src_directory = "$base_directory\source"
 	$output_directory = "$base_directory\build"
 	$dist_directory = "$base_directory\distribution"
-	$sln_file = "$src_directory\Thinktecture.IdentityServer3.sln"
+	$sln_file = "$src_directory\IdentityServer3.sln"
 	$target_config = "Release"
 	$framework_version = "v4.5"
-	$xunit_path = "$src_directory\packages\xunit.runners.1.9.2\tools\xunit.console.clr4.exe"
+	$xunit_path = "$src_directory\packages\xunit.runner.console.2.0.0\tools\xunit.console.exe"
 	$ilmerge_path = "$src_directory\packages\ILMerge.2.14.1208\tools\ILMerge.exe"
 	$nuget_path = "$src_directory\.nuget\nuget.exe"
 
 	$buildNumber = 0;
-	$version = "1.1.0.0"
+	$version = "1.5.0.0"
 	$preRelease = $null
 }
 
@@ -49,17 +49,17 @@ task UpdateVersion {
 task RunTests -depends Compile {
 	$project = "Thinktecture.IdentityServer.Core.Tests"
 	mkdir $output_directory\xunit\$project -ea SilentlyContinue
-	.$xunit_path "$src_directory\Tests\UnitTests\bin\Release\$project.dll" /html "$output_directory\xunit\$project\index.html"
+	.$xunit_path "$src_directory\Tests\UnitTests\bin\Release\$project.dll"
 }
 
 
 task ILMerge -depends Compile {
-	$input_dlls = "$output_directory\Thinktecture.IdentityServer.Core.dll"
+	$input_dlls = "$output_directory\Thinktecture.IdentityServer3.dll"
 
 	Get-ChildItem -Path $output_directory -Filter *.dll |
 		foreach-object {
-			# Exclude Thinktecture.IdentityServer.Core.dll as that will be the primary assembly
-			if ("$_" -ne "Thinktecture.IdentityServer.Core.dll" -and
+			# Exclude Thinktecture.IdentityServer3.dll as that will be the primary assembly
+			if ("$_" -ne "Thinktecture.IdentityServer3.dll" -and
 			    "$_" -ne "Owin.dll") {
 				$input_dlls = "$input_dlls $output_directory\$_"
 			}
@@ -88,7 +88,7 @@ task CreateNuGetPackage -depends ILMerge {
 	}
 
 
-	copy-item $src_directory\Thinktecture.IdentityServer3.nuspec $dist_directory
+	copy-item $src_directory\IdentityServer3.nuspec $dist_directory
 	copy-item $output_directory\Thinktecture.IdentityServer3.xml $dist_directory\lib\net45\
-	exec { . $nuget_path pack $dist_directory\Thinktecture.IdentityServer3.nuspec -BasePath $dist_directory -o $dist_directory -version $packageVersion }
+	exec { . $nuget_path pack $dist_directory\IdentityServer3.nuspec -BasePath $dist_directory -o $dist_directory -version $packageVersion }
 }

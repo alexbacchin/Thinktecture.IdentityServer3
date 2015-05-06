@@ -20,45 +20,56 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Thinktecture.IdentityServer.Core.Extensions;
+using Thinktecture.IdentityServer.Core.Logging;
+using Thinktecture.IdentityServer.Core.Services;
 
 namespace Thinktecture.IdentityServer.Core.Configuration.Hosting
 {
     internal class CorsPolicyProvider : ICorsPolicyProvider
     {
-        readonly CorsPolicy policy;
+        private readonly static ILog Logger = LogProvider.GetCurrentClassLogger();
+        
         readonly string[] paths;
 
-        public CorsPolicyProvider(CorsPolicy policy, IEnumerable<string> allowedPaths)
+        public CorsPolicyProvider(IEnumerable<string> allowedPaths)
         {
-            if (policy == null) throw new ArgumentNullException("policy");
             if (allowedPaths == null) throw new ArgumentNullException("allowedPaths");
 
-            this.policy = policy;
             this.paths = allowedPaths.Select(Normalize).ToArray();
         }
 
         public async Task<System.Web.Cors.CorsPolicy> GetCorsPolicyAsync(IOwinRequest request)
         {
-            if (IsPathAllowed(request))
+            var path = request.Path.ToString();
+            var origin = request.Headers["Origin"];
+            
+            if (IsPathAllowed(request) && origin != null)
             {
-                var origin = request.Headers["Origin"];
-                if (origin != null)
-                {
-                    if (policy.AllowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
-                    {
-                        return Allow(origin);
-                    }
+                Logger.InfoFormat("CORS request made for path: {0} from origin: {1}", path, origin);
 
-                    if (policy.PolicyCallback != null)
-                    {
-                        if (await policy.PolicyCallback(origin))
-                        {
-                            return Allow(origin);
-                        }
-                    }
+                if (await IsOriginAllowed(origin, request.Environment))
+                {
+                    Logger.Info("CorsPolicyService allowed origin");
+                    return Allow(origin);
+                }
+                else
+                {
+                    Logger.Info("CorsPolicyService did not allow origin");
                 }
             }
+            else
+            {
+                Logger.WarnFormat("CORS request made for path: {0} from origin: {1} but rejected because invalid CORS path", path, origin);
+            }
+
             return null;
+        }
+
+        protected virtual async Task<bool> IsOriginAllowed(string origin, IDictionary<string, object> env)
+        {
+            var corsPolicy = env.ResolveDependency<ICorsPolicyService>();
+            return await corsPolicy.IsOriginAllowedAsync(origin);
         }
 
         private bool IsPathAllowed(IOwinRequest request)

@@ -51,16 +51,6 @@ namespace Thinktecture.IdentityServer.Host.Config
                         "https://localhost:44312/callback",
                     },
 
-                    ScopeRestrictions = new List<string>
-                    {
-                        Constants.StandardScopes.OpenId,
-                        Constants.StandardScopes.Profile,
-                        Constants.StandardScopes.Email,
-                        Constants.StandardScopes.OfflineAccess,
-                        "read",
-                        "write"
-                    },
-                    
                     AccessTokenType = AccessTokenType.Reference,
                 },
 
@@ -102,6 +92,7 @@ namespace Thinktecture.IdentityServer.Host.Config
 
                         // JavaScript client
                         "http://localhost:21575/index.html",
+                        "http://localhost:21575/silent_renew.html",
 
                         // MVC form post sample
                         "http://localhost:11716/account/signInCallback",
@@ -114,6 +105,10 @@ namespace Thinktecture.IdentityServer.Host.Config
                     {
                         "http://localhost:23453/index.html",
                         "http://localhost:21575/index.html"
+                    },
+
+                    AllowedCorsOrigins = new List<string>{
+                        "http://localhost:21575"
                     },
                     
                     IdentityTokenLifetime = 360,
